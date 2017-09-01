@@ -1,5 +1,6 @@
 package com.imudges.j2se.network;
 
+import Bean.Message;
 import com.google.gson.Gson;
 
 import java.io.*;
@@ -41,7 +42,6 @@ public class Server {
                 System.err.println("等待客户端连接......");
                 //从队列中取出Socket或等待连接
                 socket = serverSocket.accept();
-
                 if (socket.isConnected()){
                     System.out.println("连接成功！");
                 }
@@ -59,24 +59,65 @@ public class Server {
     private class HandlerThread implements Runnable{
         private Socket socket;
 
+        /**
+         * 保存每次连接的socket
+         * */
+        private void saveSocket(String cilentID,Socket socket){
+            if(cilentID != null && socket != null){
+                clientSocket.put(cilentID,socket);
+            } else {
+                System.err.println("clientID 或 Socket发生错误");
+            }
+        }
+
+        /**
+         * 给socket发送消息，内容为msg
+         **/
+        private void sendMsg(String msg,Socket s){
+            //合法性判断
+            if(msg != null && s != null){
+                //判断socket是否连接
+                if(s.isConnected()){
+                    try {
+                        PrintWriter p = new PrintWriter(s.getOutputStream());
+                        p.println(msg);
+                        p.flush();
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                    }
+                } else {
+                    System.err.println("socket已断开");
+                }
+            } else {
+                System.err.println("发送信息错误！");
+            }
+        }
+
         public HandlerThread(Socket socket) {
             this.socket = socket;
+
             new Thread(this).start();
         }
 
         @Override
         public void run() {
             try {
-
-                bufferedReader = new BufferedReader(new InputStreamReader(socket.getInputStream()));
+                bufferedReader = new BufferedReader(new InputStreamReader(this.socket.getInputStream()));
                 //处理客户端发来的数据
                 String clientMsg = null;
                 while ((clientMsg = bufferedReader.readLine())!=null){
                     System.out.println("客户端发来的消息：" + clientMsg);
+                    Message msg = gson.fromJson(clientMsg,Message.class);
+                    //储存socket
+                    saveSocket(msg.getClientID(),this.socket);
+                    if(msg.getTo() != null ){
+                        sendMsg(msg.getMsg(),clientSocket.get(msg.getTo()));
+                    }
                     //向客户端回复信息
-                    printWriter = new PrintWriter(socket.getOutputStream());
-                    printWriter.println("ok");
-                    printWriter.flush();
+//                    printWriter = new PrintWriter(socket.getOutputStream());
+//                    printWriter.println("ok");
+//                    printWriter.flush();
+
                 }
             } catch (IOException e) {
                 e.printStackTrace();
