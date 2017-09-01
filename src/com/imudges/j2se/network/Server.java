@@ -111,7 +111,9 @@ public class Server {
                     //储存socket
                     saveSocket(msg.getClientID(),this.socket);
                     if(msg.getTo() != null ){
-                        sendMsg(msg.getMsg(),clientSocket.get(msg.getTo()));
+
+                        sendMsg(clientMsg,clientSocket.get(msg.getTo()));
+
                     }
                     //向客户端回复信息
 //                    printWriter = new PrintWriter(socket.getOutputStream());
